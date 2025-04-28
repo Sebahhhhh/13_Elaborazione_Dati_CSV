@@ -1,15 +1,163 @@
-//TIP To <b>Run</b> code, press <shortcut actionId="Run"/> or
-// click the <icon src="AllIcons.Actions.Execute"/> icon in the gutter.
-public class Main {
-    public static void main(String[] args) {
-        //TIP Press <shortcut actionId="ShowIntentionActions"/> with your caret at the highlighted text
-        // to see how IntelliJ IDEA suggests fixing it.
-        System.out.printf("Hello and welcome!");
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
-        for (int i = 1; i <= 5; i++) {
-            //TIP Press <shortcut actionId="Debug"/> to start debugging your code. We have set one <icon src="AllIcons.Debugger.Db_set_breakpoint"/> breakpoint
-            // for you, but you can always add more by pressing <shortcut actionId="ToggleLineBreakpoint"/>.
-            System.out.println("i = " + i);
+public class Main {
+
+    public static void main(String[] args) {
+        try {
+            String percorsoFileInput = "src/Diffusione.csv";
+            List<Dato> dati = caricaDati(percorsoFileInput);
+            System.out.println("Dati caricati: " + dati.size() + " record");
+
+            List<Report> reportRegioni = generaReport(dati);
+            System.out.println("Report generato per " + reportRegioni.size() + " regioni");
+
+            String percorsoFileOutput = "report.csv";
+            salvaReport(reportRegioni, percorsoFileOutput);
+            System.out.println("Report generato con successo: " + percorsoFileOutput);
+        } catch (IOException e) {
+            System.err.println("Errore: " + e.getMessage());
+        }
+    }
+
+    static class Dato {
+        private int anno;
+        private String regione;
+        private double valore;
+
+        public Dato(int anno, String regione, double valore) {
+            this.anno = anno;
+            this.regione = regione;
+            this.valore = valore;
+        }
+
+        public int getAnno() {
+            return anno;
+        }
+
+        public String getRegione() {
+            return regione;
+        }
+
+        public double getValore() {
+            return valore;
+        }
+    }
+
+    static class Report {
+        private String regione;
+        private double totale;
+        private Map<Integer, Double> valoriPerAnno;
+
+        public Report(String regione) {
+            this.regione = regione;
+            this.totale = 0.0;
+            this.valoriPerAnno = new HashMap<>();
+        }
+
+        public void aggiungi(int anno, double valore) {
+            this.totale += valore;
+            this.valoriPerAnno.put(anno, valore);
+        }
+
+        public String getRegione() {
+            return regione;
+        }
+
+        public double getTotale() {
+            return totale;
+        }
+
+        public double getValore(int anno) {
+            return valoriPerAnno.getOrDefault(anno, 0.0);
+        }
+
+        public double getMedia() {
+            return valoriPerAnno.size() > 0 ? totale / valoriPerAnno.size() : 0;
+        }
+    }
+
+    private static List<Dato> caricaDati(String percorsoFile) throws IOException {
+        List<Dato> dati = new ArrayList<>();
+
+        try (BufferedReader lettore = new BufferedReader(new FileReader(percorsoFile))) {
+            String riga;
+            boolean intestazione = true;
+
+            while ((riga = lettore.readLine()) != null) {
+                if (intestazione) {
+                    intestazione = false;
+                    continue;
+                }
+
+                String[] valori = riga.split(";");
+                if (valori.length >= 3) {
+                    int anno = Integer.parseInt(valori[0]);
+                    String regione = valori[1];
+                    String valoreStr = valori[2].replace(',', '.');
+                    double valore = Double.parseDouble(valoreStr);
+
+                    dati.add(new Dato(anno, regione, valore));
+                }
+            }
+        }
+
+        return dati;
+    }
+
+    private static List<Report> generaReport(List<Dato> dati) {
+        List<Report> reportRegioni = new ArrayList<>();
+        List<String> regioni = new ArrayList<>();
+
+        for (Dato dato : dati) {
+            if (!regioni.contains(dato.getRegione())) {
+                regioni.add(dato.getRegione());
+            }
+        }
+
+        for (String regione : regioni) {
+            Report report = new Report(regione);
+
+            for (Dato dato : dati) {
+                if (dato.getRegione().equals(regione)) {
+                    report.aggiungi(dato.getAnno(), dato.getValore());
+                }
+            }
+
+            reportRegioni.add(report);
+        }
+
+        Collections.sort(reportRegioni, (r1, r2) -> r1.getRegione().compareTo(r2.getRegione()));
+
+        return reportRegioni;
+    }
+
+    private static void salvaReport(List<Report> reportRegioni, String percorsoFile) throws IOException {
+        try (FileWriter scrittore = new FileWriter(percorsoFile)) {
+            scrittore.write("Regione;Totale;2003;2004;2005;2006;2007;Media\n");
+
+            for (Report report : reportRegioni) {
+                String totale = String.format("%.2f", report.getTotale()).replace('.', ',');
+                String val2003 = String.format("%.2f", report.getValore(2003)).replace('.', ',');
+                String val2004 = String.format("%.2f", report.getValore(2004)).replace('.', ',');
+                String val2005 = String.format("%.2f", report.getValore(2005)).replace('.', ',');
+                String val2006 = String.format("%.2f", report.getValore(2006)).replace('.', ',');
+                String val2007 = String.format("%.2f", report.getValore(2007)).replace('.', ',');
+                String media = String.format("%.2f", report.getMedia()).replace('.', ',');
+
+                scrittore.write(String.format("%s;%s;%s;%s;%s;%s;%s;%s\n",
+                        report.getRegione(),
+                        totale,
+                        val2003, val2004, val2005, val2006, val2007,
+                        media));
+            }
         }
     }
 }
