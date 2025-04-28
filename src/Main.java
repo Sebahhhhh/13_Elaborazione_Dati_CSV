@@ -141,23 +141,37 @@ public class Main {
 
     private static void salvaReport(List<Report> reportRegioni, String percorsoFile) throws IOException {
         try (FileWriter scrittore = new FileWriter(percorsoFile)) {
+            // Intestazione del file CSV
             scrittore.write("Regione;Totale;2003;2004;2005;2006;2007;Media\n");
 
+            // Scrivi una riga per ogni regione
             for (Report report : reportRegioni) {
-                String totale = String.format("%.2f", report.getTotale()).replace('.', ',');
-                String val2003 = String.format("%.2f", report.getValore(2003)).replace('.', ',');
-                String val2004 = String.format("%.2f", report.getValore(2004)).replace('.', ',');
-                String val2005 = String.format("%.2f", report.getValore(2005)).replace('.', ',');
-                String val2006 = String.format("%.2f", report.getValore(2006)).replace('.', ',');
-                String val2007 = String.format("%.2f", report.getValore(2007)).replace('.', ',');
-                String media = String.format("%.2f", report.getMedia()).replace('.', ',');
+                StringBuilder riga = new StringBuilder();
 
-                scrittore.write(String.format("%s;%s;%s;%s;%s;%s;%s;%s\n",
-                        report.getRegione(),
-                        totale,
-                        val2003, val2004, val2005, val2006, val2007,
-                        media));
+                // Aggiungi regione
+                riga.append(report.getRegione()).append(";");
+
+                // Aggiungi totale
+                riga.append(formattaNumero(report.getTotale())).append(";");
+
+                // Aggiungi valori per ogni anno
+                riga.append(formattaNumero(report.getValore(2003))).append(";");
+                riga.append(formattaNumero(report.getValore(2004))).append(";");
+                riga.append(formattaNumero(report.getValore(2005))).append(";");
+                riga.append(formattaNumero(report.getValore(2006))).append(";");
+                riga.append(formattaNumero(report.getValore(2007))).append(";");
+
+                // Aggiungi media
+                riga.append(formattaNumero(report.getMedia()));
+
+                // Scrivi la riga
+                scrittore.write(riga.toString() + "\n");
             }
         }
+    }
+
+    // Metodo di supporto per formattare i numeri
+    private static String formattaNumero(double valore) {
+        return String.format("%.2f", valore).replace('.', ',');
     }
 }
